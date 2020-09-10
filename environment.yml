@@ -1,0 +1,16 @@
+name: recsys-fair-metrics
+channels:
+- anaconda
+dependencies:
+- python=3.6
+- tqdm>=4.*
+- scipy>=1.4
+- scikit-learn>=0.23.*
+- psutil>=5.6
+- requests>=2.*
+- pip:
+  - kaleido==0.0.3
+  - plotly>=4.*
+  - pandas>=1.1.*
+
+  # - mars-gym=/media/workspace/DeepFood/deep-reco-gym/src
