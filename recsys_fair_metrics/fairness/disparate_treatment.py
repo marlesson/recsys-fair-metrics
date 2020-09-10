@@ -6,7 +6,7 @@ from sklearn.metrics import (
     confusion_matrix
 )
 from scipy.stats import norm
-from util.util import mean_confidence_interval
+from recsys_fair_metrics.util.util import mean_confidence_interval
 import plotly.figure_factory as ff
 import plotly.express as px
 import plotly.graph_objects as go

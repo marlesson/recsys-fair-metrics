@@ -1,12 +1,12 @@
 import pandas as pd
-from util.util import parallel_literal_eval
-from fairness.disparate_mistreatment import DisparateMistreatment
-from fairness.disparate_treatment import DisparateTreatment
-from relevance.rank_metrics import RelevanceRank
-from exposure.exposure_metrics import ExposureMetric
+from recsys_fair_metrics.util.util import parallel_literal_eval
+from recsys_fair_metrics.fairness.disparate_mistreatment import DisparateMistreatment
+from recsys_fair_metrics.fairness.disparate_treatment import DisparateTreatment
+from recsys_fair_metrics.relevance.rank_metrics import RelevanceRank
+from recsys_fair_metrics.exposure.exposure_metrics import ExposureMetric
 from typing import List, Dict, Any
 
-class RecsysFairMetrics(object):
+class RecsysFair(object):
   def __init__(
       self,
       df: pd.DataFrame,

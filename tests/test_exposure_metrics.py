@@ -3,7 +3,8 @@ import sys, os
 import unittest
 from unittest.mock import patch
 import pandas as pd
-from recsys_fair_metrics import RecsysFairMetrics
+from recsys_fair_metrics.recsys_fair import RecsysFair
+
 import shutil
 import numpy as np
 
@@ -15,7 +16,7 @@ class TestExposureMetrics(unittest.TestCase):
       os.makedirs(OUTPUT_TEST, exist_ok=True)
 
       self.df     = pd.read_csv('tests/factories/test_set_predictions.csv')
-      self.recsys_fair = RecsysFairMetrics(self.df, 
+      self.recsys_fair = RecsysFair(self.df, 
                                           'userid', 
                                           'musicbrainz-artist-id', 
                                           'sorted_actions', 

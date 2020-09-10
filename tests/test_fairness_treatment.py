@@ -3,8 +3,8 @@ import sys, os
 import unittest
 from unittest.mock import patch
 import pandas as pd
-from fairness.disparate_treatment import DisparateTreatment
-from recsys_fair_metrics import RecsysFairMetrics
+from recsys_fair_metrics.recsys_fair import RecsysFair
+
 import shutil
 
 OUTPUT_TEST = 'tests/output'
@@ -17,7 +17,7 @@ class TestFairnessTreatment(unittest.TestCase):
 
       self.df     = pd.read_csv('tests/factories/test_set_predictions.csv')
       self.column = "user_gender"
-      self.recsys_fair = RecsysFairMetrics(self.df, 
+      self.recsys_fair = RecsysFair(self.df, 
                                           'userid', 
                                           'musicbrainz-artist-id', 
                                           'sorted_actions', 

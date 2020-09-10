@@ -1,11 +1,11 @@
 import sys, os
-
 import unittest
 from unittest.mock import patch
+from recsys_fair_metrics.recsys_fair import RecsysFair
+
 import pandas as pd
-from recsys_fair_metrics import RecsysFairMetrics
-import shutil
 import numpy as np
+import shutil
 
 OUTPUT_TEST = 'tests/output'
 
@@ -16,7 +16,7 @@ class TestRelevanceMetrics(unittest.TestCase):
       os.makedirs(OUTPUT_TEST, exist_ok=True)
 
       self.df     = pd.read_csv('tests/factories/test_set_predictions.csv')
-      self.recsys_fair = RecsysFairMetrics(self.df[self.df.trained == 0], 
+      self.recsys_fair = RecsysFair(self.df[self.df.trained == 0], 
                                           'userid', 
                                           'musicbrainz-artist-id', 
                                           'sorted_actions', 
@@ -36,3 +36,5 @@ class TestRelevanceMetrics(unittest.TestCase):
       fig = rel.show(title="RankMetrics")
       fig.write_image(OUTPUT_TEST+"/rank_metrics.png")
 
+if __name__ == '__main__':
+    unittest.main()

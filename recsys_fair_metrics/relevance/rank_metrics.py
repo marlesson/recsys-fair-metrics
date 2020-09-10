@@ -1,13 +1,14 @@
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
-from util.util import mean_confidence_interval
 import os
 from tqdm import tqdm
 from multiprocessing.pool import Pool
-from util.rank_metrics import ndcg_at_k, precision_at_k
 import functools
-from util.util import mean_confidence_interval
+
+from recsys_fair_metrics.util.rank_metrics import ndcg_at_k, precision_at_k
+from recsys_fair_metrics.util.util import mean_confidence_interval
+
 import plotly.figure_factory as ff
 import plotly.express as px
 import plotly.graph_objects as go
