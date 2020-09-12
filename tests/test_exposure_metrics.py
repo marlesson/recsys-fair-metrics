@@ -25,43 +25,43 @@ class TestExposureMetrics(unittest.TestCase):
                                     reclist_column = 'sorted_actions', 
                                     reclist_score_column = 'action_scores')
       
-    # def test_metric(self):
-    #   exp = self.recsys_fair.exposure(self.column, k=10)
+    def test_metric(self):
+      exp = self.recsys_fair.exposure(self.column, k=10)
 
-    #   metric = exp.metric()
+      metric = exp.metric()
 
-    #   print(metric)
+      print(metric)
 
-    # def test_ndce_at_k(self):
-    #   exp = self.recsys_fair.exposure(self.column)
-    #   supp = 'd43d12a1-2dc9-4257-a2fd-0a3bb1081b86'
-    #   metric = exp.ndce_at_k(supp)
-    #   self.assertEqual(np.round(metric, 4),0.0413)
+    def test_ndce_at_k(self):
+      exp = self.recsys_fair.exposure(self.column)
+      supp = 'd43d12a1-2dc9-4257-a2fd-0a3bb1081b86'
+      metric = exp.ndce_at_k(supp)
+      self.assertEqual(np.round(metric, 4),0.0413)
 
-    #   supp = 'af1122a8-e2f0-4534-8ce1-919d1edba1d9'
-    #   metric = exp.ndce_at_k(supp)
-    #   self.assertEqual(np.round(metric, 4),0.0)
+      supp = 'af1122a8-e2f0-4534-8ce1-919d1edba1d9'
+      metric = exp.ndce_at_k(supp)
+      self.assertEqual(np.round(metric, 4),0.0)
 
-    # def test_prob_exp(self):
-    #   exp = self.recsys_fair.exposure(self.column)
-    #   prop = 10000
-    #   supp = ['d43d12a1-2dc9-4257-a2fd-0a3bb1081b86']
-    #   metric = exp.prob_exp(supp, prop)
-    #   self.assertEqual(np.round(metric, 2),351.46)
+    def test_prob_exp(self):
+      exp = self.recsys_fair.exposure(self.column)
+      prop = 10000
+      supp = ['d43d12a1-2dc9-4257-a2fd-0a3bb1081b86']
+      metric = exp.prob_exp(supp, prop)
+      self.assertEqual(np.round(metric, 2),351.46)
 
-    #   supp = ['af1122a8-e2f0-4534-8ce1-919d1edba1d9']
-    #   metric = exp.prob_exp(supp, prop)
-    #   self.assertEqual(np.round(metric, 2),0.29)
+      supp = ['af1122a8-e2f0-4534-8ce1-919d1edba1d9']
+      metric = exp.prob_exp(supp, prop)
+      self.assertEqual(np.round(metric, 2),0.29)
 
-    #   # supp = ['d43d12a1-2dc9-4257-a2fd-0a3bb1081b86', 'af1122a8-e2f0-4534-8ce1-919d1edba1d9']
-    #   # metric = exp.prob_exp(supp, prop)
-    #   # self.assertEqual(np.round(metric, 2), 175.88)
+      # supp = ['d43d12a1-2dc9-4257-a2fd-0a3bb1081b86', 'af1122a8-e2f0-4534-8ce1-919d1edba1d9']
+      # metric = exp.prob_exp(supp, prop)
+      # self.assertEqual(np.round(metric, 2), 175.88)
 
-    # def test_show(self):
-    #   exp = self.recsys_fair.exposure(self.column)
+    def test_show(self):
+      exp = self.recsys_fair.exposure(self.column)
 
-    #   fig = exp.show('geral', title="Exposure")
-    #   fig.write_image(OUTPUT_TEST+"/exposure_geral.png")
+      fig = exp.show('geral', title="Exposure")
+      fig.write_image(OUTPUT_TEST+"/exposure_geral.png")
 
     def test_show_per_group(self):
       exp = self.recsys_fair.exposure(self.column, k=10)
