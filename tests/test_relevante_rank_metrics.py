@@ -16,11 +16,12 @@ class TestRelevanceMetrics(unittest.TestCase):
       os.makedirs(OUTPUT_TEST, exist_ok=True)
 
       self.df     = pd.read_csv('tests/factories/test_set_predictions.csv')
-      self.recsys_fair = RecsysFair(self.df[self.df.trained == 0], 
-                                          'userid', 
-                                          'musicbrainz-artist-id', 
-                                          'sorted_actions', 
-                                          'action_scores')
+      self.recsys_fair = RecsysFair(df = self.df[self.df.trained == 0], 
+                                    supp_metadata = None,
+                                    user_column = 'userid', 
+                                    item_column = 'musicbrainz-artist-id', 
+                                    reclist_column = 'sorted_actions', 
+                                    reclist_score_column = 'action_scores')
       
     def test_metric(self):
       rel = self.recsys_fair.relevance(['precision@1', 'ndcg@5', 'ndcg@10'])

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
+import functools
 
 import os
 from tqdm import tqdm
@@ -37,64 +38,90 @@ class ExposureMetric(object):
   def __init__(
       self,
       dataframe: pd.DataFrame,
+      supp_metadata: pd.DataFrame,
+      column: str,
       user_column: str,
-      rec_list: str
+      item_column: str,
+      rec_list: str,
+      k: int,
   ):
     self._dataframe = dataframe.fillna("-")
+    self._supp_metadata = supp_metadata
     self._rec_list = rec_list
     self._user_column = user_column
-    
+    self._item_column = item_column
+    self._column = column
     self._df_metrics = None
     self._df_reclist = None
-    self.fit(self._dataframe, self._user_column, self._rec_list)
+    self._k = k
+    self.fit(self._dataframe, self._column, self._user_column, self._rec_list, self._k)
 
   def fit(
       self,
-      df: pd.DataFrame, 
+      df: pd.DataFrame,
+      column: str,       
       user_column: str,
-      rec_list: str
+      rec_list: str,
+      k: int,
   ) -> pd.DataFrame:
 
-    self._df_reclist = df[[user_column, rec_list]]
-
-  def cum_exposure(self, k: int = 10):
-    df = self._df_reclist.copy()
-    df[self._rec_list] = df[self._rec_list].apply(lambda l: l[:k])
+    df = df[[user_column, rec_list]].copy()
+    df[rec_list] = df[rec_list].apply(lambda l: l[:k])
     df['pos'] = [list(range(k)) for i in range(len(df))]
 
-
-    total_exposure = len(self._dataframe) * k
+    #total_exposure = len(self._dataframe) * k
 
     # Explode reclist
-    df_sup_per_user = df.set_index([self._user_column])\
+    df_sup_per_user = df.set_index([user_column])\
                           .apply(pd.Series.explode)\
                           .reset_index()
     df_sup_per_user['count'] = 1
-    print(df_sup_per_user)
+    #print(df_sup_per_user.shape)
+    df_sup_exp = df_sup_per_user.groupby(rec_list).count()\
+                  .sort_values(user_column)
+
+    # Prob Of recommender
+    df_sup_prob = df_sup_exp[['count']]/len(df)
+    df_sup_prob = df_sup_prob.rename(columns={'count': 'prob'})
 
     # Mean Score pivot per column
-    df_mean_scores_per_column = pd.pivot_table(df_sup_per_user, 
+    df_sup_prob_pos = pd.pivot_table(df_sup_per_user, 
                                             index=self._rec_list, 
                                             columns='pos', 
-                                            values='count', aggfunc=np.sum).fillna(0)
-    print(df_mean_scores_per_column)
-    print(df_mean_scores_per_column.values.max())
+                                            values='count', aggfunc=np.sum).fillna(0.001)
+    sum_values = np.array(df_sup_prob_pos.sum(axis=1).values)
+    df_sup_prob_pos = df_sup_prob_pos/np.array([sum_values]).transpose()
 
+    # Calcule exposure per group
+    # ...
 
-    df_sup_exp = df_sup_per_user.groupby(self._rec_list).count()\
-                  .sort_values(self._user_column)
+    self._df_cum_exposure = df_sup_exp
+    self._df_sup_prob = df_sup_prob
+    self._df_sup_prob_pos = df_sup_prob_pos
+    self._df_reclist = df[[user_column, rec_list]]
+    self.all_supp = list(np.unique(df_sup_per_user[rec_list].values))
 
-    #self._df_sup = np.unique(df_sup_per_user[rec_list])
-
-    return df_sup_exp
-
-  def metric(self):
+  def metric(self, supp: List = None, prop: int = 10000):
     '''
     Rank Metrics - 
     '''
-    return self.cum_exposure(10)
+    if supp is None:
+      supp = self.all_supp
+    return self.prob_exp(supp, prop)
 
-  def ndce_at_k(self, supp: str, k: int):
+
+  def prob_exp(self, supp: List, prop: int):
+    w = np.log2(np.arange(2, self._k + 2))
+    values = []
+    for s in supp:
+      rec_prob = self._df_sup_prob.loc[s].prob
+      rec_prob_pos = self._df_sup_prob_pos.loc[s].values
+      v = np.ma.masked_invalid((prop * (rec_prob * rec_prob_pos))/w).sum()
+      values.append(v)
+    
+    return np.sum(values)
+
+  def ndce_at_k(self, supp: str):
     '''
     Normalized Discounted Cumulative Exposure (NDCE)
     '''
@@ -117,23 +144,103 @@ class ExposureMetric(object):
       )
 
       print("Calculating ndce@k...")
-      df['ndce@{}'.format(k)] = list(
+      df['ndce@{}'.format(self._k)] = list(
           tqdm(
-              p.map(functools.partial(ndcg_at_k, k=k), df["relevance_list"]),
+              p.map(functools.partial(ndcg_at_k, k=self._k), df["relevance_list"]),
               total=len(df),
           )
       )
 
-    return df['ndce@{}'.format(k)].mean()
+    return df['ndce@{}'.format(self._k)].mean()
 
-  def show(self, **kwargs):
+  def show(self, kind: str = 'geral', **kwargs):
+    if kind == 'geral':
+      return self.show_geral(**kwargs)
+    elif kind == 'per_group':
+      return self.show_per_group(**kwargs)
+
+  def show_per_group(self, **kwargs):
+    '''
+    '''    
+    prop  = 10000 if 'prop' not in kwargs else kwargs['prop']
+    with_annotate  = True if 'with_annotate' not in kwargs else kwargs['with_annotate']
+
+    title  = "Exposure per Group" if 'title' not in kwargs else kwargs['title']
+    data   = []
+
+    assert 'column' in kwargs #and kwargs['column'] in 
+
+    df     = self._df_cum_exposure[['count']].reset_index()
+    df["prob_exp"] = df[self._rec_list].apply(lambda supp: self.prob_exp([supp], prop))
+
+    df_group = self._supp_metadata[[self._item_column, self._column]].drop_duplicates()
+
+    exp_cum = df.merge(df_group, left_on=self._rec_list,  right_on=self._item_column)
+    
+
+    exp_final = []
+    for group, rows in exp_cum.groupby(self._column):
+      values = rows['prob_exp'].cumsum()
+      data.append(
+          go.Scatter(
+              name=self._column + "." + str(group),
+              x=np.array(list(range(len(rows))))*100/len(rows),
+              y=values,
+          )
+      )      
+
+      exp_final.append(values.max())
+
+    fig = go.Figure(data=data)
+
+    # Change the bar mode
+    fig.update_layout(
+        template=TEMPLATE,
+        legend_orientation="h",
+        xaxis_title="% Producers",
+        yaxis_title="Exposure 1:{}".format(prop*self._k),
+        legend=dict(y=-0.2),
+        title=title,
+    )
+
+    if with_annotate:
+      for a in exp_final:
+        fig.add_annotation(
+                x=100,
+                y=a,
+                xref="x",
+                yref="y",
+                text="{}".format(a.round(2)),
+                showarrow=True,
+                font=dict(
+                    family="Courier New, monospace",
+                    size=12,
+                    color="#ffffff"
+                    ),
+                align="center",
+                arrowhead=1,
+                arrowsize=1,
+                arrowwidth=1,
+                arrowcolor="#636363",
+                ax=30,
+                ay=-10,
+                bordercolor="#c7c7c7",
+                borderwidth=1,
+                borderpad=2,
+                bgcolor="#ff7f0e",
+                opacity=0.7
+                )
+
+    return fig
+
+  def show_geral(self, **kwargs):
     '''
     '''    
 
     top_k  = 10 if 'top_k' not in kwargs else kwargs['top_k']
     title  = "Exposure" if 'title' not in kwargs else kwargs['title']
 
-    df     = self.cum_exposure(top_k)
+    df     = self._df_cum_exposure
     data   = []
     
     exp_cum = list(df[self._user_column].cumsum())/df[self._user_column].sum()

@@ -17,11 +17,12 @@ class TestFairnessTreatment(unittest.TestCase):
 
       self.df     = pd.read_csv('tests/factories/test_set_predictions.csv')
       self.column = "user_gender"
-      self.recsys_fair = RecsysFair(self.df, 
-                                          'userid', 
-                                          'musicbrainz-artist-id', 
-                                          'sorted_actions', 
-                                          'action_scores')
+      self.recsys_fair = RecsysFair(df = self.df, 
+                                    supp_metadata = None,
+                                    user_column = 'userid', 
+                                    item_column = 'musicbrainz-artist-id', 
+                                    reclist_column = 'sorted_actions', 
+                                    reclist_score_column = 'action_scores')
       
     def test_metric(self):
       dt = self.recsys_fair.disparate_treatment(self.column)

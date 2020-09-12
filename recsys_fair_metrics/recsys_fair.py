@@ -10,6 +10,8 @@ class RecsysFair(object):
   def __init__(
       self,
       df: pd.DataFrame,
+      user_metadata: pd.DataFrame = None,
+      supp_metadata: pd.DataFrame = None,
       user_column: str = 'user_id',
       item_column: str = 'item_id',
       reclist_column: str = 'reclist_column',
@@ -19,6 +21,8 @@ class RecsysFair(object):
     self._item_column = item_column
     self._reclist_column = reclist_column
     self._reclist_score_column = reclist_score_column
+    self._supp_metadata = supp_metadata
+    self._user_metadata = user_metadata
     self._dataframe = df.copy()
     self.fit()
 
@@ -42,10 +46,14 @@ class RecsysFair(object):
                                   prediction_score_key = self._reclist_score_column, 
                                   prediction_key = self._reclist_column)
 
-  def exposure(self):
+  def exposure(self, column: str, k: int = 10):
     return ExposureMetric(dataframe = self._dataframe,
+                          supp_metadata = self._supp_metadata,
+                          column = column, 
                           user_column = self._user_column,
-                          rec_list = self._reclist_column)    
+                          item_column = self._item_column,
+                          rec_list = self._reclist_column,
+                          k=k)    
 
   def relevance(self, metrics: List[str] = []):
     return RelevanceRank(dataframe = self._dataframe,
