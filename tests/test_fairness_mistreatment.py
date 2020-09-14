@@ -27,7 +27,7 @@ class TestFairnessMistreatment(unittest.TestCase):
       dm = self.recsys_fair.disparate_mistreatment(self.column)
 
       metric = dm.metric()
-      self.assertEqual(metric.round(4), 0.0399)
+      self.assertEqual(metric['true_positive_rate'].round(4), 0.0399)
 
 
     def test_show(self):

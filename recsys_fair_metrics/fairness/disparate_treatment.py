@@ -44,7 +44,7 @@ class DisparateTreatment(object):
 
     df = df[[column, prediction_key, prediction_score_key]]
     df = df.set_index([column]).apply(pd.Series.explode).reset_index().fillna("-")
-
+    #from IPython import embed; embed()
     def confidence(x):
         return mean_confidence_interval(x)[1]
 
@@ -56,21 +56,21 @@ class DisparateTreatment(object):
         ).reset_index()#.rename(columns={item_column: 'count', first_recscore_column: 'mean_rhat_score'})
 
     # Mean Score List
-    df_mean = self.filter_treatment_df(df_mean, prediction_key, column, min_size=15)\
-                  .sort_values('mean_rhat_score')
+    df_mean = self.filter_treatment_df(df_mean, prediction_key, column, min_size=10)\
+                 .sort_values('mean_rhat_score')
 
     # Mean Score pivot per column
     df_mean_scores_per_column = df_mean.pivot(index=prediction_key, 
                                             columns=self._column, 
-                                            values=['mean_rhat_score']).dropna()
+                                            values=['mean_rhat_score'])#.fillna()
 
     
-
+    self._sample_score = 10000
     self._df_scores = df
     self._df_mean_scores = df_mean
     self._df_mean_scores_per_column = df_mean_scores_per_column['mean_rhat_score']
 
-  def filter_treatment_df(self, df, rec_column, fairness_column, min_size = 15):
+  def filter_treatment_df(self, df, rec_column, fairness_column, min_size = 10):
     # Filter significance
     df = df[df['count'] >= min_size]
 
@@ -79,7 +79,6 @@ class DisparateTreatment(object):
     df_count = df_count[df_count['count'] > 1]  #== len(np.unique(df[fairness_column]))
     df = df[df[rec_column].isin(df_count[rec_column])]
 
-    #df.groupby([rec_column]).count()
     return df
 
   def metrics(self):
@@ -166,11 +165,12 @@ class DisparateTreatment(object):
 
     title  = "Disparate Treatment: " + self._column if 'title' not in kwargs else kwargs['title']
 
-    df     = self._df_mean_scores_per_column
+    df     = self._df_scores
     data   = []
     column = self._column
-    for group in df.columns:
-        x, y = self.ecdf(list(df[group]))
+    for group in np.unique(df[column].values):
+        values = df[df[column] == group]['action_scores'].sample(self._sample_score, random_state=42, replace=True).values
+        x, y = self.ecdf(values)
         data.append(
             go.Scatter(
                 name=column + "." + str(group),
@@ -178,7 +178,7 @@ class DisparateTreatment(object):
                 x=x,
             )
         )  
-
+    #fig = px.histogram(df, x='')
     fig = go.Figure(data=data)
 
     # Change the bar mode
@@ -196,7 +196,7 @@ class DisparateTreatment(object):
         y=0.1,
         xref="x",
         yref="y",
-        text="Max K-S: {}".format(self.metric().round(3)),
+        text="Max K-S: {}".format(self.metric()['max_ks'].round(3)),
         showarrow=False,
         font=dict(
             family="Courier New, monospace",
@@ -224,10 +224,18 @@ class DisparateTreatment(object):
     '''
     Max KS Distance 
     '''
+    df     = self._df_scores
+    columns = np.unique(df[self._column].values)
     ks_metrics = []
-    for a in self._df_mean_scores_per_column.columns:
-        for b in self._df_mean_scores_per_column.columns:
-            ks_metrics.append(ks_2samp(self._df_mean_scores_per_column[a], self._df_mean_scores_per_column[b]).statistic)
+    for a in columns:
+        for b in columns:
+            sample_a = df[df[self._column] == a]['action_scores'].sample(self._sample_score, random_state=42, replace=True).values
+            sample_b = df[df[self._column] == b]['action_scores'].sample(self._sample_score, random_state=42, replace=True).values
+            ks_metrics.append(ks_2samp(sample_a, sample_b).statistic)
 
-    s = len(self._df_mean_scores_per_column.columns)
-    return np.max(ks_metrics)
+    # for a in self._df_mean_scores_per_column.columns:
+    #     for b in self._df_mean_scores_per_column.columns:
+    #         ks_metrics.append(ks_2samp(self._df_mean_scores_per_column[a], self._df_mean_scores_per_column[b]).statistic)
+
+    #s = len(self._df_mean_scores_per_column.columns)
+    return {'max_ks': np.max(ks_metrics)}

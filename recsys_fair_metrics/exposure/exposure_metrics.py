@@ -67,9 +67,7 @@ class ExposureMetric(object):
 
     df = df[[user_column, rec_list]].copy()
     df[rec_list] = df[rec_list].apply(lambda l: l[:k])
-    df['pos'] = [list(range(k)) for i in range(len(df))]
-
-    #total_exposure = len(self._dataframe) * k
+    df['pos']    = df[rec_list].apply(lambda l: list(range(len(l))) )  
 
     # Explode reclist
     df_sup_per_user = df.set_index([user_column])\
@@ -101,17 +99,21 @@ class ExposureMetric(object):
     self._df_reclist = df[[user_column, rec_list]]
     self.all_supp = list(np.unique(df_sup_per_user[rec_list].values))
 
-  def metric(self, supp: List = None, prop: int = 10000):
+  def metric(self, prop: int = 10000):
     '''
-    Rank Metrics - 
+    All exposure metrics
     '''
-    if supp is None:
-      supp = self.all_supp
-    return self.prob_exp(supp, prop)
 
+    m = self.df_exposure(prop).groupby("column")\
+          .agg(supp_size=("prob_exp", "count"), 
+              exp_cum=("prob_exp", "sum"), 
+              exp_mean=("prob_exp", "mean")).to_dict()
+    
+    return m
 
   def prob_exp(self, supp: List, prop: int):
     w = np.log2(np.arange(2, self._k + 2))
+    #w = np.ones(self._k)
     values = []
     for s in supp:
       rec_prob = self._df_sup_prob.loc[s].prob
@@ -153,6 +155,17 @@ class ExposureMetric(object):
 
     return df['ndce@{}'.format(self._k)].mean()
 
+  def df_exposure(self, prop: int):
+    df     = self._df_cum_exposure[['count']].reset_index()
+    df["prob_exp"] = df[self._rec_list].apply(lambda supp: self.prob_exp([supp], prop))
+
+    df_group = self._supp_metadata[[self._item_column, self._column]].drop_duplicates().fillna("-")
+    df_group['column'] = df_group[self._column].apply(lambda c: self._column + "." + str(c))
+    
+    exp_cum = df.merge(df_group, left_on=self._rec_list,  right_on=self._item_column)
+
+    return exp_cum
+
   def show(self, kind: str = 'geral', **kwargs):
     if kind == 'geral':
       return self.show_geral(**kwargs)
@@ -168,23 +181,17 @@ class ExposureMetric(object):
     title  = "Exposure per Group" if 'title' not in kwargs else kwargs['title']
     data   = []
 
-    assert 'column' in kwargs #and kwargs['column'] in 
-
-    df     = self._df_cum_exposure[['count']].reset_index()
-    df["prob_exp"] = df[self._rec_list].apply(lambda supp: self.prob_exp([supp], prop))
-
-    df_group = self._supp_metadata[[self._item_column, self._column]].drop_duplicates()
-
-    exp_cum = df.merge(df_group, left_on=self._rec_list,  right_on=self._item_column)
-    
+    exp_cum = self.df_exposure(prop)
 
     exp_final = []
     for group, rows in exp_cum.groupby(self._column):
-      values = rows['prob_exp'].cumsum()
+      size_supp = [i + 1 for i in range(len(rows))]
+      values = rows['prob_exp'].cumsum() / size_supp
+      
       data.append(
           go.Scatter(
               name=self._column + "." + str(group),
-              x=np.array(list(range(len(rows))))*100/len(rows),
+              x=np.array(list(range(len(rows))))*100/(len(rows) -1),
               y=values,
           )
       )      
@@ -210,7 +217,7 @@ class ExposureMetric(object):
                 y=a,
                 xref="x",
                 yref="y",
-                text="{}".format(a.round(2)),
+                text="{}".format(np.round(a, 2)),
                 showarrow=True,
                 font=dict(
                     family="Courier New, monospace",
@@ -237,7 +244,7 @@ class ExposureMetric(object):
     '''
     '''    
 
-    top_k  = 10 if 'top_k' not in kwargs else kwargs['top_k']
+    #top_k  = 10 if 'top_k' not in kwargs else kwargs['top_k']
     title  = "Exposure" if 'title' not in kwargs else kwargs['title']
 
     df     = self._df_cum_exposure

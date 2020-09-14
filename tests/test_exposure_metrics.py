@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 import pandas as pd
 from recsys_fair_metrics.recsys_fair import RecsysFair
-
+from pprint import pprint
 import shutil
 import numpy as np
 
@@ -27,10 +27,9 @@ class TestExposureMetrics(unittest.TestCase):
       
     def test_metric(self):
       exp = self.recsys_fair.exposure(self.column, k=10)
-
       metric = exp.metric()
 
-      print(metric)
+      self.assertEqual(np.round(metric['exp_mean']['artist_rating.5.0'], 2),20.72)
 
     def test_ndce_at_k(self):
       exp = self.recsys_fair.exposure(self.column)
@@ -58,7 +57,7 @@ class TestExposureMetrics(unittest.TestCase):
       # self.assertEqual(np.round(metric, 2), 175.88)
 
     def test_show(self):
-      exp = self.recsys_fair.exposure(self.column)
+      exp = self.recsys_fair.exposure(self.column, k=10)
 
       fig = exp.show('geral', title="Exposure")
       fig.write_image(OUTPUT_TEST+"/exposure_geral.png")

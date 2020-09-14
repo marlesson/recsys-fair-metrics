@@ -27,8 +27,8 @@ class TestFairnessTreatment(unittest.TestCase):
     def test_metric(self):
       dt = self.recsys_fair.disparate_treatment(self.column)
 
-      metric = dt.metric()
-      self.assertEqual(metric.round(4), 0.5054)
+      metric = dt.metric()['max_ks']
+      self.assertEqual(metric.round(4), 0.2076)
 
 
     def test_show_bar(self):

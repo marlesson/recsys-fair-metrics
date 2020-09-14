@@ -181,11 +181,11 @@ class DisparateMistreatment(object):
 
 
     fig.add_annotation(
-        x=0.9,
+        x=df[metric].max() + df[metric + "_C"].max(),
         y=0,
         xref="x",
         yref="y",
-        text="RMSE: {}".format(self.metric().round(3)),
+        text="RMSE: {}".format(self.metric()[self._metric].round(3)),
         showarrow=False,
         font=dict(
             family="Courier New, monospace",
@@ -207,4 +207,4 @@ class DisparateMistreatment(object):
     RMSE 
     '''
     values = self._df_metrics[self._metric].values
-    return np.sqrt(((values - values.mean()) ** 2).mean())
+    return {self._metric: np.sqrt(((values - values.mean()) ** 2).mean())}
