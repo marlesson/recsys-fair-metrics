@@ -16,38 +16,44 @@ class DisparateMistreatment(object):
     def __init__(
         self,
         dataframe: pd.DataFrame,
+        supp_metadata: pd.DataFrame,
         metric: str,
         column: str,
-        ground_truth_key: str,
+        item_column: str,
         prediction_key: str,
     ):
         self._dataframe = dataframe.fillna("-")
+        self._supp_metadata = supp_metadata
         self._column = [column]
         self._metric = metric
-        self._ground_truth_key = ground_truth_key
+        self._item_column = item_column
         self._prediction_key = prediction_key
 
         self._df_metrics = None
         self.fit(
-            self._dataframe, self._column, self._ground_truth_key, self._prediction_key
+            self._dataframe, self._column, self._item_column, self._prediction_key
         )
 
     def fit(
         self,
         df: pd.DataFrame,
         sub_keys: List[str],
-        ground_truth_key: str,
+        item_column: str,
         prediction_key: str,
     ) -> pd.DataFrame:
         rows: List[Dict[str, Any]] = []
 
+        if self._supp_metadata is not None:
+            meta = self._supp_metadata[[self._item_column, self._column[0]]].drop_duplicates().fillna("-")
+            df   = df.merge(meta, on=self._item_column, how='left', suffixes=("", "_"))
+        
         for sub_key in sub_keys:
             subs = df[sub_key].unique()
 
             for sub in subs:
                 sub_df = df[df[sub_key] == sub]
                 y_true, y_pred = (
-                    sub_df[ground_truth_key].astype(str),
+                    sub_df[item_column].astype(str),
                     sub_df[prediction_key].astype(str),
                 )
 
@@ -127,7 +133,7 @@ class DisparateMistreatment(object):
                         "total_individuals": num_positives + num_negatives,
                     }
                 )
-
+        
         self._df_metrics = pd.DataFrame(data=rows).sort_values(["sub_key", "sub"])
         self._df_metrics = self._df_metrics[
             [

@@ -136,7 +136,7 @@ class DisparateTreatment(object):
             data.append(
                 go.Bar(
                     name=column + "." + str(group),
-                    y=[str(a) for a in rows[reclist_column]],
+                    y=["ID:"+str(a) for a in rows[reclist_column]],
                     x=rows["mean_rhat_score"],
                     orientation="h",
                     error_x=dict(type="data", array=rows["confidence"]),
@@ -149,6 +149,7 @@ class DisparateTreatment(object):
         fig.update_layout(
             template=TEMPLATE,
             legend_orientation="h",
+            yaxis_title="supp",
             xaxis_title="rhat_scores",
             legend=dict(y=-0.2),
             title=title,

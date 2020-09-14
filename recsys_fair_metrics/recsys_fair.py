@@ -44,9 +44,10 @@ class RecsysFair(object):
     def disparate_mistreatment(self, column: str):
         return DisparateMistreatment(
             dataframe=self._dataframe,
+            supp_metadata=self._supp_metadata,
             metric="true_positive_rate",
             column=column,
-            ground_truth_key=self._item_column,
+            item_column=self._item_column,
             prediction_key="first_rec",
         )
 

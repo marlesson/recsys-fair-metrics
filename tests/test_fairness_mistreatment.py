@@ -15,10 +15,12 @@ class TestFairnessMistreatment(unittest.TestCase):
         os.makedirs(OUTPUT_TEST, exist_ok=True)
 
         self.df = pd.read_csv("tests/factories/test_set_predictions.csv")
+        self.supp_metadata = pd.read_csv("tests/factories/artist-metadata.csv")
+
         self.column = "artist_rating"
         self.recsys_fair = RecsysFair(
             df=self.df,
-            supp_metadata=None,
+            supp_metadata=self.supp_metadata,
             user_column="userid",
             item_column="musicbrainz-artist-id",
             reclist_column="sorted_actions",
