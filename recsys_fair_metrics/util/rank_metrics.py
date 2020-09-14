@@ -277,7 +277,7 @@ def prediction_coverage(predicted: List[list], catalog: list) -> float:
     """
     predicted_flattened = [p for sublist in predicted for p in sublist]
     unique_predictions = len(set(predicted_flattened))
-    
+
     prediction_coverage = round(unique_predictions / (len(catalog) * 1.0) * 100, 2)
     return prediction_coverage
 
@@ -303,14 +303,17 @@ def personalization(predicted: List[list]) -> float:
         df = (
             pd.DataFrame(data=predicted)
             .reset_index()
-            .melt(id_vars="index", value_name="item",)
+            .melt(
+                id_vars="index",
+                value_name="item",
+            )
         )
         df = df[["index", "item"]].pivot(index="index", columns="item", values="item")
         df = df.mask(pd.notna(df), 1)
         df = df.mask(pd.isna(df), 0)
         rec_matrix = sp.csr_matrix(df.values.astype(int))
         return rec_matrix
-    
+
     # create matrix for recommendations
     predicted = np.array(predicted)
     rec_matrix_sparse = make_rec_matrix(predicted)
